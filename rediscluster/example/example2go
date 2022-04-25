@@ -1,0 +1,57 @@
+/*
+ * @Author: gitsrc
+ * @Date: 2020-07-09 11:50:27
+ * @LastEditors: gitsrc
+ * @LastEditTime: 2020-07-09 12:06:16
+ * @FilePath: /ServiceCar/utils/rediscluster/example/example2.go
+ */
+package main
+
+import (
+	"ServiceCar/utils/rediscluster"
+	"fmt"
+	"log"
+	"time"
+)
+
+func main() {
+	cluster, err := rediscluster.NewCluster(
+		&rediscluster.Options{
+			StartNodes:   []string{"127.0.0.1:9001", "127.0.0.1:9002", "127.0.0.1:9003"},
+			ConnTimeout:  50 * time.Millisecond,
+			ReadTimeout:  50 * time.Millisecond,
+			WriteTimeout: 50 * time.Millisecond,
+			KeepAlive:    16,
+			AliveTime:    60 * time.Second,
+		})
+
+	if err != nil {
+		log.Fatalf("redis.New error: %s", err.Error())
+	}
+
+	_, err = cluster.Do("set", "{user000}.name", "Joel")
+	_, err = cluster.Do("set", "{user000}.age", "26")
+	_, err = cluster.Do("set", "{user000}.country", "China")
+
+	name, err := rediscluster.String(cluster.Do("get", "{user000}.name"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	age, err := rediscluster.Int(cluster.Do("get", "{user000}.age"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	country, err := rediscluster.String(cluster.Do("get", "{user000}.country"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("name: %s, age: %d, country: %s\n", name, age, country)
+
+	cluster.Close()
+	_, err = cluster.Do("set", "foo", "bar")
+	if err == nil {
+		log.Fatal("expect a none nil error")
+	}
+	log.Println(err)
+}
